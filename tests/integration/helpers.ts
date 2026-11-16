@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import type { Clock, IdGenerator } from '../../src/application/ports';
 import type { Deps } from '../../src/application/useCases';
 import type { ChallengeConfig } from '../../src/domain/challenge/config';

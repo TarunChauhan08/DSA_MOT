@@ -1,12 +1,15 @@
 import { Disclaimer } from '../design-system/Disclaimer';
 import { ROUTE_LABELS, routeHref, type Route } from '../routing/routes';
 import { useHashRoute } from '../routing/useHashRoute';
-import { VIEWS } from '../views/views';
+import { Skeleton } from '../design-system/Skeleton';
+import { useDashboard } from '../hooks/useDashboard';
+import { VIEWS } from '../views';
 
 const NAV_ROUTES: readonly Route[] = ['today', 'challenge', 'history', 'integrations', 'settings'];
 
 export function DashboardApp({ initialRoute }: { initialRoute: Route }) {
   const route = useHashRoute(initialRoute);
+  const state = useDashboard();
   const View = VIEWS[route];
 
   return (
@@ -41,7 +44,19 @@ export function DashboardApp({ initialRoute }: { initialRoute: Route }) {
 
       <main className="flex-1 px-4 py-5">
         <h2 className="sr-only">{ROUTE_LABELS[route]}</h2>
-        <View />
+        {state.status === 'loading' && (
+          <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-2 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        )}
+        {state.status === 'error' && (
+          <p role="alert" className="text-sm text-danger">
+            Could not load your data: {state.message}
+          </p>
+        )}
+        {state.status === 'ready' && <View view={state.view} />}
       </main>
 
       <footer className="border-t border-border px-4 py-3">

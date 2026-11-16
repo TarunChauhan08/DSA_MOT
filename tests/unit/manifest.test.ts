@@ -10,7 +10,7 @@ describe('manifest permissions', () => {
   }
 
   it('requests only the permissions used in this phase', () => {
-    expect(manifest.permissions).toEqual(['sidePanel']);
+    expect(manifest.permissions).toEqual(['sidePanel', 'alarms']);
   });
 
   it('requests no host permissions yet', () => {

@@ -18,9 +18,10 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "wxt build && playwright test -c tests/e2e/playwright.config.ts",
+    "test:e2e": "wxt build --mode e2e && playwright test -c tests/e2e/playwright.config.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "build:e2e": "wxt build --mode e2e"
   },
   "dependencies": {
     "dexie": "4.4.7",

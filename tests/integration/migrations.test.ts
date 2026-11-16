@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { DsaDatabase } from '../../src/persistence/db';
 import {
