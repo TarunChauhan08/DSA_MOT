@@ -3,7 +3,8 @@ import type { DashboardView } from '../../application/queries';
 import type { Route } from '../routing/routes';
 import { ChallengeView } from './ChallengeView';
 import { HistoryView } from './HistoryView';
-import { IntegrationsView, SettingsView } from './PlaceholderViews';
+import { IntegrationsView } from './IntegrationsView';
+import { SettingsView } from './PlaceholderViews';
 import { SetupView } from './SetupView';
 import { TodayView } from './TodayView';
 

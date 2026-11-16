@@ -51,3 +51,11 @@ See docs/decisions/0007-owner-decisions-2026-11-16.md. LeetCode via username (AD
 **Verified (actual runs):** `npm run check` ✓ (229 tests); e2e 6/6 ✓ three runs in a row, including a full 7-day lifecycle (success, partial ₹10, two grace days, missed ₹40/₹60/₹80 → FAILED ₹190), blocked second challenge, rejected edit command.
 
 **Known limitations:** no automatic LeetCode/Striver tracking yet (Phase 4) — entries are manual and labelled; no heatmap, notifications or settings (Phase 5); no export/import (Phase 6).
+
+## Phase 4 — Integrations (2026-11-16)
+
+**Implemented:** LeetCode by username (connect with verification, 30-min checks + on open, backoff, stats card, disconnect); Striver sheet tick detection (both layouts, lessons ignored, live transitions only); takeUforward-only command channel; same-problem suggestions with Same/Different decisions; Integrations page with status, last check, troubleshooting. docs/INTEGRATIONS.md, ADR-0011.
+
+**Verified (actual runs):** `npm run check` ✓ (274 tests); e2e 10/10 ✓ — real worker against mocked LeetCode GraphQL (no cookies sent), unknown username error, real content script on a page built from recorded takeUforward markup (problem counted as "Sheet marked", lesson ignored), duplicate merge.
+
+**Not verified (needs the owner):** LeetCode request from the extension origin; a sheet tick while signed in to takeUforward. Checklist in docs/INTEGRATIONS.md. takeUforward judge verdicts not implemented.

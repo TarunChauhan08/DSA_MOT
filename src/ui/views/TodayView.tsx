@@ -7,6 +7,7 @@ import { Stat } from '../design-system/Stat';
 import { formatDay, formatInr, PLATFORM_LABEL, plural } from '../format';
 import { AddProblemForm } from './AddProblemForm';
 import { EntryBadge } from './badges';
+import { DuplicateSuggestions } from './DuplicateSuggestions';
 import { penaltyHint } from './penaltyHint';
 
 function Onboarding() {
@@ -104,6 +105,8 @@ export function TodayView({ view }: { view: DashboardView }) {
           )}
         </Section>
       )}
+
+      <DuplicateSuggestions suggestions={view.duplicateSuggestions} />
 
       <Section title="Add a problem">
         <AddProblemForm />

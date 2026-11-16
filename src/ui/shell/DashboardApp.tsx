@@ -3,6 +3,7 @@ import { ROUTE_LABELS, routeHref, type Route } from '../routing/routes';
 import { useHashRoute } from '../routing/useHashRoute';
 import { Skeleton } from '../design-system/Skeleton';
 import { useDashboard } from '../hooks/useDashboard';
+import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
 import { VIEWS } from '../views';
 
 const NAV_ROUTES: readonly Route[] = ['today', 'challenge', 'history', 'integrations', 'settings'];
@@ -10,6 +11,7 @@ const NAV_ROUTES: readonly Route[] = ['today', 'challenge', 'history', 'integrat
 export function DashboardApp({ initialRoute }: { initialRoute: Route }) {
   const route = useHashRoute(initialRoute);
   const state = useDashboard();
+  useRefreshOnOpen();
   const View = VIEWS[route];
 
   return (

@@ -62,3 +62,16 @@ export function entryLabel(evidence: Evidence, status: EntryStatus): string {
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${String(n)} ${n === 1 ? one : many}`;
 }
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** "just now", "5 min ago", "3 h ago", "2 days ago". */
+export function formatAgo(nowMs: number, thenMs: number): string {
+  const diff = Math.max(0, nowMs - thenMs);
+  if (diff < MINUTE_MS) return 'just now';
+  if (diff < HOUR_MS) return `${String(Math.floor(diff / MINUTE_MS))} min ago`;
+  if (diff < DAY_MS) return `${String(Math.floor(diff / HOUR_MS))} h ago`;
+  return `${plural(Math.floor(diff / DAY_MS), 'day')} ago`;
+}

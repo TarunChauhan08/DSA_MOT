@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDayKey } from '../../src/domain/calendar';
-import { entryLabel, formatDay, formatInr, plural } from '../../src/ui/format';
+import { entryLabel, formatAgo, formatDay, formatInr, plural } from '../../src/ui/format';
 
 describe('formatInr', () => {
   it.each([
@@ -33,5 +33,18 @@ describe('plural', () => {
   it('pluralizes', () => {
     expect(plural(1, 'day')).toBe('1 day');
     expect(plural(2, 'day')).toBe('2 days');
+  });
+});
+
+describe('formatAgo', () => {
+  const now = 1_800_000_000_000;
+  it.each([
+    [10_000, 'just now'],
+    [5 * 60_000, '5 min ago'],
+    [3 * 3_600_000, '3 h ago'],
+    [86_400_000, '1 day ago'],
+    [2 * 86_400_000, '2 days ago'],
+  ])('%i ms → %s', (diff, text) => {
+    expect(formatAgo(now, now - diff)).toBe(text);
   });
 });

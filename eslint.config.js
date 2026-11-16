@@ -30,7 +30,7 @@ export default defineConfig(
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       'no-empty': ['error', { allowEmptyCatch: false }],
-      eqeqeq: 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
     },
   },
   {

@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { randomIds } from '../application/ports';
+import { syncLeetCode } from '../application/leetcodeSync';
 import { finalizeDueDays } from '../application/useCases';
 import { handleCommand } from '../background/router';
 import { scheduleAlarms } from '../background/scheduler';
@@ -15,13 +16,17 @@ export default defineBackground(() => {
     extensionId: browser.runtime.id,
     extensionOrigin: browser.runtime.getURL('/'),
     testClockEnabled: TEST_CLOCK_ENABLED,
+    fetchFn: (url: string, init: RequestInit) => fetch(url, init),
   };
 
   // Never rely on the worker staying alive: catch up on every wake-up (ADR-0005).
   const catchUp = async (trigger: string) => {
     const now = await currentTimeMs(db, TEST_CLOCK_ENABLED);
-    const report = await finalizeDueDays({ db, clock: { now: () => now }, ids: randomIds });
+    const deps = { db, clock: { now: () => now }, ids: randomIds };
+    const report = await finalizeDueDays(deps);
     await scheduleAlarms(now);
+    const sync = await syncLeetCode(deps, ctx.fetchFn, 'schedule');
+    if (sync.status === 'error') console.warn('[dsa] LeetCode check failed', sync.error);
     if (report.finalized + report.revised + report.completed > 0) {
       console.info(`[dsa] catch-up (${trigger})`, report);
     }

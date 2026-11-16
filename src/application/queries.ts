@@ -16,7 +16,12 @@ import {
   type Evidence,
   type Verification,
 } from '../domain/completion/counting';
-import { platformOf, type Platform } from '../domain/identity/identity';
+import {
+  platformOf,
+  suggestDuplicates,
+  type Platform,
+  type SourceKey,
+} from '../domain/identity/identity';
 import { paise, sumPaise, type Paise } from '../domain/money';
 import {
   computeStreaks,
@@ -27,6 +32,14 @@ import {
 import type { DsaDatabase } from '../persistence/db';
 import type { ChallengeRecord, ChallengeStatus } from '../persistence/records';
 import { deriveChallenge, toFacts } from './derive';
+import {
+  META_KEYS,
+  readHealth,
+  readLeetCodeUsername,
+  readStats,
+  type Health,
+  type StatsCache,
+} from './integrationState';
 
 export interface TodayEntry {
   readonly id: string;
@@ -81,6 +94,22 @@ export interface ChallengeListItem {
   readonly totalPenaltyPaise: Paise;
 }
 
+export interface IntegrationsView {
+  readonly leetcode: {
+    readonly username: string | null;
+    readonly health: Health;
+    readonly stats: StatsCache | null;
+  };
+  readonly tuf: { readonly health: Health };
+}
+
+export interface DuplicateSuggestionView {
+  readonly a: SourceKey;
+  readonly b: SourceKey;
+  readonly titleA: string;
+  readonly titleB: string;
+}
+
 export interface DashboardView {
   readonly nowMs: number;
   readonly today: DayKey;
@@ -93,6 +122,9 @@ export interface DashboardView {
   /** Newest first. */
   readonly challenges: readonly ChallengeListItem[];
   readonly lifetimePenaltyPaise: Paise;
+  readonly integrations: IntegrationsView;
+  /** Cross-platform problems with identical titles awaiting a same/different decision. */
+  readonly duplicateSuggestions: readonly DuplicateSuggestionView[];
 }
 
 function inForce(day: DayKey, challenges: readonly ChallengeRecord[]): ChallengeRecord | null {
@@ -118,7 +150,14 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
     .aboveOrEqual(startOfDayMs(firstDay < today ? firstDay : today, tz))
     .toArray();
   const byId = new Map(completions.map((c) => [c.id, c]));
-  const byDay = groupByDay(toFacts(completions, await db.mappings.toArray()), tz);
+  const mappings = await db.mappings.toArray();
+  const byDay = groupByDay(toFacts(completions, mappings), tz);
+  const titles = new Map<SourceKey, string>();
+  for (const c of completions) titles.set(c.sourceKey, c.title);
+  const duplicateSuggestions = suggestDuplicates(
+    [...titles].map(([sourceKey, title]) => ({ sourceKey, title })),
+    mappings,
+  ).map((d) => ({ ...d, titleA: titles.get(d.a) ?? d.a, titleB: titles.get(d.b) ?? d.b }));
 
   let current: CurrentChallengeView | null = null;
   const list: ChallengeListItem[] = [];
@@ -232,5 +271,14 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
     streak: computeStreaks(activity, today),
     challenges: list.reverse(),
     lifetimePenaltyPaise: sumPaise(list.map((c) => c.totalPenaltyPaise).concat(paise(0))),
+    integrations: {
+      leetcode: {
+        username: await readLeetCodeUsername(db),
+        health: await readHealth(db, META_KEYS.leetcodeHealth),
+        stats: await readStats(db),
+      },
+      tuf: { health: await readHealth(db, META_KEYS.tufHealth) },
+    },
+    duplicateSuggestions,
   };
 }
