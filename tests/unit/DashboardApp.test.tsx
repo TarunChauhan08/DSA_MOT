@@ -11,17 +11,17 @@ function navigate(hash: string) {
 }
 
 describe('DashboardApp', () => {
-  it('starts on the initial route and marks it current', () => {
+  it('starts on the initial route and shows onboarding on first run', async () => {
     render(<DashboardApp initialRoute="today" />);
     expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText('No active challenge')).toBeInTheDocument();
+    expect(await screen.findByText('Make skipping DSA expensive.')).toBeInTheDocument();
   });
 
-  it('switches views on hash change', () => {
+  it('switches views on hash change', async () => {
     render(<DashboardApp initialRoute="today" />);
     navigate('#/history');
     expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText('No history yet')).toBeInTheDocument();
+    expect(await screen.findByText('No history yet')).toBeInTheDocument();
   });
 
   it('opens on settings when used as the options page', () => {
@@ -34,8 +34,9 @@ describe('DashboardApp', () => {
     expect(screen.getByRole('note')).toHaveTextContent(VIRTUAL_PENALTY_DISCLAIMER);
   });
 
-  it('shows no numeric metrics while there is no data', () => {
+  it('shows no numeric metrics while there is no data', async () => {
     const { container } = render(<DashboardApp initialRoute="today" />);
+    await screen.findByText('Make skipping DSA expensive.');
     expect(container.querySelector('main')?.textContent).not.toMatch(/₹|\d+\s*\/\s*\d+/);
   });
 });

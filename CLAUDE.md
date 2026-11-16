@@ -29,7 +29,7 @@ Commands (npm, Node ≥ 22):
 
 - `npm run dev` — WXT dev build with HMR · `npm run build` — production build to `.output/chrome-mv3`
 - `npm run typecheck` · `npm run lint` · `npm run format:check` · `npm test` (Vitest)
-- `npm run test:e2e` — build + Playwright with the unpacked extension (needs `npx playwright install chromium`, or `CHROME_PATH` to a Chrome for Testing binary)
+- `npm run test:e2e` — e2e build (`--mode e2e`, enables the test clock) + Playwright with the unpacked extension (needs `npx playwright install chromium`, or `CHROME_PATH` to a Chrome for Testing binary)
 - `npm run check` — everything except e2e; must pass before a phase is reported done
 
 ## Process

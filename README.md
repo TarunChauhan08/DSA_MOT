@@ -4,7 +4,7 @@ A personal, local-first Chrome extension that makes daily DSA practice stick: on
 
 > Virtual penalty only. No actual money is collected, transferred, owed or donated.
 
-**Status:** Phase 1 (foundation) — extension shell only; no tracking yet. See `PROJECT_STATUS.md`.
+**Status:** Phase 3 — challenges, daily target, grace days, virtual penalties and streaks work with manual entries. Automatic LeetCode/Striver tracking comes in Phase 4. See `PROJECT_STATUS.md`.
 
 ## Setup (Windows, macOS or Linux)
 

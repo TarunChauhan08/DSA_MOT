@@ -11,6 +11,7 @@ test('popup renders with disclaimer and dashboard button', async ({ context, ext
 
   await expect(page.getByRole('heading', { name: 'DSA Discipline' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open dashboard' })).toBeEnabled();
+  await expect(page.getByText('No challenge yet')).toBeVisible();
   await expect(page.getByRole('note')).toHaveText(DISCLAIMER);
   expect(errors).toEqual([]);
 });

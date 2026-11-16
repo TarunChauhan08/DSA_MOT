@@ -43,3 +43,11 @@ See docs/decisions/0007-owner-decisions-2026-11-16.md. LeetCode via username (AD
 **Verified (actual runs):** `npm run check` ✓ — 174 tests (unit + property + integration); coverage domain ≥ 95% lines / ≥ 90% branches ✓; e2e 4/4 ✓.
 
 **Not done in this phase (by design, ADR-0009):** service-worker wiring, `storage`/`alarms` permissions, any UI for challenges (Phase 3). CI action bump to v7 not yet run on GitHub.
+
+## Phase 3 — Challenge experience (2026-11-16)
+
+**Implemented:** onboarding; challenge setup (7/15/30, target, ₹ start/increase, manual toggle) with live summary and a confirm step; Today view (progress, streak, potential penalty, challenge stats, add problem by link or name, today's list with verification labels); Challenge view (locked config, every day with outcome and penalty); History (all-time stats, challenge list); popup summary; background service worker (validated commands, midnight + sweep alarms, catch-up on every wake); extension icons. ADR-0010.
+
+**Verified (actual runs):** `npm run check` ✓ (229 tests); e2e 6/6 ✓ three runs in a row, including a full 7-day lifecycle (success, partial ₹10, two grace days, missed ₹40/₹60/₹80 → FAILED ₹190), blocked second challenge, rejected edit command.
+
+**Known limitations:** no automatic LeetCode/Striver tracking yet (Phase 4) — entries are manual and labelled; no heatmap, notifications or settings (Phase 5); no export/import (Phase 6).

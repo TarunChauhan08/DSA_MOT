@@ -1,8 +1,8 @@
 import { addDays, dayKeyOf, daysBetween, startOfDayMs } from '../domain/calendar';
-import { evaluateDays, summarize } from '../domain/challenge/evaluate';
-import { countDay, groupByDay, type CompletionFact } from '../domain/completion/counting';
-import { resolveCanonicalKeys, soloCanonicalKey } from '../domain/identity/identity';
+import { summarize } from '../domain/challenge/evaluate';
+import { groupByDay } from '../domain/completion/counting';
 import type { DsaDatabase } from '../persistence/db';
+import { deriveChallenge, toFacts } from './derive';
 import type {
   ChallengeDayRecord,
   ChallengeRecord,
@@ -56,35 +56,24 @@ async function recomputeChallenge(
   const closedDays = Math.min(Math.max(daysBetween(challenge.startDay, today), 0), config.planDays);
   if (closedDays === 0) return;
 
-  const rangeStart = startOfDayMs(challenge.startDay, tz);
-  const rangeEnd = startOfDayMs(addDays(challenge.startDay, closedDays), tz);
   const completions = await db.completions
     .where('sourceTimestampMs')
-    .between(rangeStart, rangeEnd, true, false)
+    .between(
+      startOfDayMs(challenge.startDay, tz),
+      startOfDayMs(addDays(challenge.startDay, closedDays), tz),
+      true,
+      false,
+    )
     .toArray();
-
-  const canonical = resolveCanonicalKeys(
-    completions.map((c) => c.sourceKey),
-    mappings,
-  );
-  const facts: CompletionFact[] = completions.map((c) => ({
-    id: c.id,
-    sourceKey: c.sourceKey,
-    canonicalKey: canonical.get(c.sourceKey) ?? soloCanonicalKey(c.sourceKey),
-    evidence: c.evidence,
-    sourceTimestampMs: c.sourceTimestampMs,
-    title: c.title,
-  }));
-  const byDay = groupByDay(facts, tz);
-
-  const days = Array.from({ length: closedDays }, (_, i) => addDays(challenge.startDay, i));
-  const counts = days.map((day) =>
-    countDay(byDay.get(day) ?? [], { countManual: config.countManual }),
-  );
-  const results = evaluateDays(
+  const derived = deriveChallenge(
     config,
-    counts.map((c) => c.count),
+    challenge.startDay,
+    groupByDay(toFacts(completions, mappings), tz),
+    nowMs,
   );
+  const results = derived.closedResults;
+  const days = derived.dayKeys;
+  const counts = derived.counts;
 
   const existing = new Map(
     (await db.challengeDays.where('challengeId').equals(challenge.id).toArray()).map((d) => [
