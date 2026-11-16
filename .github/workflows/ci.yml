@@ -24,6 +24,7 @@ jobs:
       - run: npm run coverage
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      - run: npm run build:e2e # test-clock build used by the e2e suite
       - run: npx playwright test -c tests/e2e/playwright.config.ts
       - if: failure()
         uses: actions/upload-artifact@v7
