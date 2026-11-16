@@ -6,7 +6,7 @@ Personal, local-first MV3 Chrome extension: one unified daily DSA target fed by 
 
 - NO real money: no wallet, payments, UPI, donations, transfers, accounts, backend, cloud sync.
 - Always show: "Virtual penalty only. No actual money is collected, transferred, owed or donated."
-- Never read/store LeetCode/TUF credentials, cookies or tokens. LeetCode: username-based public recent-accepted query only, `credentials: "omit"`, ≤1 req/30 min + debounced on-demand (ADR-0004). No other requests to LeetCode/TUF.
+- Never read/store LeetCode/TUF credentials, cookies or tokens. LeetCode: username-based public queries only (recent-accepted ≤1 req/30 min + debounced on-demand; stats card ≤1 req/6 h), `credentials: "omit"` (ADR-0004). No other requests to LeetCode/TUF.
 - Money = integer paise, round-half-up. Never floats.
 - Store UTC; a day is 00:00–24:00 Asia/Kolkata; attribute by source timestamp. Plans: 7/15/30 days. Owner decisions: docs/decisions/0007.
 - Never depend on the service worker staying alive; catch-up finalization runs on every SW start.
@@ -34,6 +34,6 @@ Commands (npm, Node ≥ 22):
 
 ## Process
 
-Phased workflow (docs/PRD.md §19). Stop at phase end and report (PRD §21). No destructive git, no push. Ask on ambiguous requirements.
+Phased workflow (docs/PRD.md §19). Stop at phase end and report (PRD §21). No destructive git. Push only when the owner asks; work on a branch and merge via PR after CI passes. Ask on ambiguous requirements.
 
 Requirements: docs/PRD.md · Proposal: docs/PHASE_0_PROPOSAL.md · Decisions: docs/decisions/

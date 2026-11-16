@@ -21,3 +21,7 @@ Status: **Accepted** by owner 2026-11-16 (rev. 1 proposed passive DOM only)
 **Limitations:** the list holds only ~10 recent accepted entries; every seen entry is stored, so solves are missed only if >10 accepted happen within 30 minutes (accepted by the owner). Breaks if the query/schema changes or the profile is private → Degraded state, manual fallback.
 
 **Rejected:** reading cookies/session tokens; storing passwords; MAIN-world response interception (unnecessary now).
+
+## Rev. 3 addendum (owner approved 2026-11-16): profile stats card
+
+Show all-time solved with Easy/Medium/Hard breakdown (as in the owner's reference screenshot). Uses the same public GraphQL endpoint (`matchedUser { submitStatsGlobal { acSubmissionNum } }`, verified 2026-11-16 on the owner's profile), `credentials: "omit"`, fetched **at most once every 6 hours** and cached. Display only — never used for counting the daily target. Implemented in Phase 4.

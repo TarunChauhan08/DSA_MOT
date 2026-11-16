@@ -17,6 +17,7 @@
     ".wxt/wxt.d.ts",
     "src",
     "tests/unit",
+    "tests/integration",
     "tests/setup.ts",
     "wxt.config.ts",
     "vitest.config.ts"
