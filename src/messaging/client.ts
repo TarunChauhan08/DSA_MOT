@@ -14,9 +14,12 @@ const MESSAGES: Record<Exclude<CommandResult, { ok: true }>['error'], string> = 
   ACTIVE_CHALLENGE_EXISTS:
     'You already have an active challenge. It must finish before a new one starts.',
   INVALID_CONFIG: 'Some challenge settings are out of range.',
+  INTEGRATION_FAILED: 'The integration could not be updated.',
   INTERNAL: 'Something went wrong in the background. Please try again.',
 };
 
 export function describeFailure(result: Exclude<CommandResult, { ok: true }>): string {
-  return MESSAGES[result.error];
+  return result.error === 'INTEGRATION_FAILED' && result.issues?.[0] !== undefined
+    ? result.issues[0]
+    : MESSAGES[result.error];
 }

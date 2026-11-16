@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { loadDashboard } from '../../src/application/queries';
-import { finalizeDueDays, recordCompletion, startChallenge } from '../../src/application/useCases';
+import {
+  decideMapping,
+  finalizeDueDays,
+  recordCompletion,
+  startChallenge,
+} from '../../src/application/useCases';
+import { makeSourceKey } from '../../src/domain/identity/identity';
 import { config, ist, makeDeps } from './helpers';
 
 type D = ReturnType<typeof makeDeps>;
@@ -139,5 +145,47 @@ describe('loadDashboard', () => {
       ['LC_RECENT_AC', 'COUNTED'],
       ['USER_MANUAL', 'SUPERSEDED_BY_VERIFIED'],
     ]);
+  });
+});
+
+describe('loadDashboard — integrations and duplicates', () => {
+  it('reports LeetCode as not connected by default', async () => {
+    const deps = makeDeps();
+    const view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.integrations.leetcode).toMatchObject({
+      username: null,
+      stats: null,
+      health: { lastAttemptAtMs: null },
+    });
+  });
+
+  it('suggests a same-title problem from the other platform until the user decides', async () => {
+    const deps = makeDeps('2026-11-16T09:00');
+    await recordCompletion(deps, {
+      evidence: 'USER_MANUAL',
+      platform: 'leetcode',
+      slug: 'two-sum',
+      title: 'Two Sum',
+    });
+    await recordCompletion(deps, {
+      evidence: 'TUF_SHEET_CHECKBOX',
+      slug: 'two-sum-problem',
+      title: 'Two Sum',
+    });
+    let view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.duplicateSuggestions).toEqual([
+      { a: 'lc:two-sum', b: 'tuf:two-sum-problem', titleA: 'Two Sum', titleB: 'Two Sum' },
+    ]);
+    expect(view.todaySolved).toBe(2);
+
+    await decideMapping(
+      deps,
+      makeSourceKey('leetcode', 'two-sum'),
+      makeSourceKey('tuf', 'two-sum-problem'),
+      'SAME',
+    );
+    view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.duplicateSuggestions).toEqual([]);
+    expect(view.todaySolved).toBe(1);
   });
 });

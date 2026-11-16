@@ -88,20 +88,19 @@ function platformOfEvent(e: RawCompletionEvent): Platform {
   }
 }
 
-/**
- * Ingests one completion from any source, idempotently, then re-derives results
- * so late-arriving data revises earlier days deterministically.
- */
-export async function recordCompletion(deps: Deps, raw: unknown): Promise<RecordCompletionResult> {
+type Prepared =
+  | { readonly ok: true; readonly record: CompletionRecord }
+  | { readonly ok: false; readonly issues: readonly string[] };
+
+function prepareCompletion(deps: Deps, raw: unknown, now: number): Prepared {
   const parsed = RawCompletionEventSchema.safeParse(raw);
   if (!parsed.success) {
     return {
-      status: 'invalid',
+      ok: false,
       issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
     };
   }
   const event = parsed.data;
-  const now = deps.clock.now();
   const platform = platformOfEvent(event);
   const sourceKey = makeSourceKey(platform, event.slug);
 
@@ -128,31 +127,87 @@ export async function recordCompletion(deps: Deps, raw: unknown): Promise<Record
       break;
   }
   if (sourceTimestampMs > now + MAX_CLOCK_SKEW_MS) {
-    return { status: 'invalid', issues: ['sourceTimestampMs: in the future'] };
+    return { ok: false, issues: ['sourceTimestampMs: in the future'] };
   }
-
-  const record: CompletionRecord = {
-    id,
-    sourceKey,
-    evidence: event.evidence,
-    sourceTimestampMs,
-    discoveredAtMs: now,
-    title: event.title,
-    url: problemUrl(platform, event.slug),
+  return {
+    ok: true,
+    record: {
+      id,
+      sourceKey,
+      evidence: event.evidence,
+      sourceTimestampMs,
+      discoveredAtMs: now,
+      title: event.title,
+      url: problemUrl(platform, event.slug),
+    },
   };
-  const { db } = deps;
-  const inserted = await db.transaction('rw', [db.completions, db.auditEvents], async () => {
-    if ((await db.completions.get(id)) !== undefined) return false;
-    await db.completions.add(record);
-    await db.auditEvents.add({
-      type: 'COMPLETION_RECORDED',
-      atMs: now,
-      payload: { id, sourceKey, evidence: event.evidence, sourceTimestampMs },
-    });
-    return true;
+}
+
+/** Inserts records that are not stored yet; returns the ids actually inserted. */
+async function insertNew(
+  db: DsaDatabase,
+  records: readonly CompletionRecord[],
+  now: number,
+): Promise<string[]> {
+  return db.transaction('rw', [db.completions, db.auditEvents], async () => {
+    const inserted: string[] = [];
+    for (const record of records) {
+      if ((await db.completions.get(record.id)) !== undefined) continue;
+      await db.completions.add(record);
+      await db.auditEvents.add({
+        type: 'COMPLETION_RECORDED',
+        atMs: now,
+        payload: {
+          id: record.id,
+          sourceKey: record.sourceKey,
+          evidence: record.evidence,
+          sourceTimestampMs: record.sourceTimestampMs,
+        },
+      });
+      inserted.push(record.id);
+    }
+    return inserted;
   });
-  if (!inserted) return { status: 'duplicate', id };
-  return { status: 'recorded', id, recompute: await recomputeAll(db, now) };
+}
+
+/**
+ * Ingests one completion from any source, idempotently, then re-derives results
+ * so late-arriving data revises earlier days deterministically.
+ */
+export async function recordCompletion(deps: Deps, raw: unknown): Promise<RecordCompletionResult> {
+  const now = deps.clock.now();
+  const prepared = prepareCompletion(deps, raw, now);
+  if (!prepared.ok) return { status: 'invalid', issues: prepared.issues };
+  const inserted = await insertNew(deps.db, [prepared.record], now);
+  if (inserted.length === 0) return { status: 'duplicate', id: prepared.record.id };
+  return {
+    status: 'recorded',
+    id: prepared.record.id,
+    recompute: await recomputeAll(deps.db, now),
+  };
+}
+
+export interface BatchResult {
+  readonly recorded: readonly string[];
+  readonly duplicates: number;
+  readonly invalid: number;
+}
+
+/** Same as `recordCompletion` for many events, with a single recompute at the end. */
+export async function recordCompletions(
+  deps: Deps,
+  raws: readonly unknown[],
+): Promise<BatchResult> {
+  const now = deps.clock.now();
+  const prepared = raws.map((raw) => prepareCompletion(deps, raw, now));
+  const records = prepared.flatMap((p) => (p.ok ? [p.record] : []));
+  const recorded = await insertNew(deps.db, records, now);
+  if (recorded.length > 0) await recomputeAll(deps.db, now);
+  return {
+    recorded,
+    duplicates: records.length - recorded.length,
+    invalid: prepared.length - records.length,
+  };
 }
 
 /**

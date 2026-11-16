@@ -14,6 +14,7 @@ function ctx(testClockEnabled = false): RouterContext {
     extensionId: EXT_ID,
     extensionOrigin: ORIGIN,
     testClockEnabled,
+    fetchFn: () => Promise.reject(new Error('no network in tests')),
   };
 }
 
@@ -135,5 +136,52 @@ describe('nextMidnightMs', () => {
   it('fires just after the next Kolkata midnight', () => {
     expect(nextMidnightMs(ist('2026-11-16T23:59'))).toBe(ist('2026-11-17T00:00') + 5_000);
     expect(nextMidnightMs(ist('2026-11-17T00:00'))).toBe(ist('2026-11-18T00:00') + 5_000);
+  });
+});
+
+describe('handleCommand — takeUforward content script', () => {
+  const tufPage = { id: EXT_ID, url: 'https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet' };
+  const tick = { type: 'TUF_SHEET_TICK', slug: 'selection-sort', title: 'Selection Sort' };
+
+  it('records a sheet tick as "sheet marked" and updates Striver status', async () => {
+    const c = ctx();
+    expect(await handleCommand(c, tick, tufPage)).toEqual({ ok: true, detail: 'recorded' });
+    expect(await handleCommand(c, tick, tufPage)).toEqual({ ok: true, detail: 'duplicate' });
+    expect((await c.db.completions.toArray())[0]).toMatchObject({
+      evidence: 'TUF_SHEET_CHECKBOX',
+      sourceKey: 'tuf:selection-sort',
+    });
+    expect((await c.db.meta.get('tuf.health'))?.value).toMatchObject({
+      lastNewSolveAtMs: expect.any(Number) as number,
+    });
+  });
+
+  it('allows only tick reports from takeUforward pages', async () => {
+    const c = ctx();
+    expect(await handleCommand(c, start, tufPage)).toEqual({ ok: false, error: 'FORBIDDEN' });
+    expect(await handleCommand(c, { type: 'CONNECT_LEETCODE', username: 'x' }, tufPage)).toEqual({
+      ok: false,
+      error: 'FORBIDDEN',
+    });
+  });
+
+  it('does not let extension pages or other sites fake ticks', async () => {
+    const c = ctx();
+    expect(await handleCommand(c, tick, page)).toEqual({ ok: false, error: 'FORBIDDEN' });
+    expect(
+      await handleCommand(c, tick, { id: EXT_ID, url: 'https://takeuforward.org.evil.com/x' }),
+    ).toEqual({ ok: false, error: 'FORBIDDEN' });
+    expect(
+      await handleCommand(c, tick, { id: EXT_ID, url: 'https://leetcode.com/problems/a/' }),
+    ).toEqual({ ok: false, error: 'FORBIDDEN' });
+    expect(await c.db.completions.count()).toBe(0);
+  });
+
+  it('rejects malformed tick data', async () => {
+    const c = ctx();
+    expect(await handleCommand(c, { ...tick, slug: '../etc' }, tufPage)).toMatchObject({
+      ok: false,
+      error: 'INVALID_COMMAND',
+    });
   });
 });

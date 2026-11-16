@@ -32,6 +32,27 @@ export const CommandSchema = z.discriminatedUnion('type', [
       title: z.string().trim().min(1).max(200),
     })
     .strict(),
+  z.object({ type: z.literal('CONNECT_LEETCODE'), username: z.string().max(60) }).strict(),
+  z.object({ type: z.literal('DISCONNECT_LEETCODE') }).strict(),
+  /** Popup/dashboard opened: check integrations now (debounced in the worker). */
+  z.object({ type: z.literal('REFRESH_INTEGRATIONS') }).strict(),
+  z
+    .object({
+      type: z.literal('DECIDE_MAPPING'),
+      a: z.string().regex(/^(lc|tuf):[a-z0-9-]{1,200}$/),
+      b: z.string().regex(/^(lc|tuf):[a-z0-9-]{1,200}$/),
+      decision: z.enum(['SAME', 'DIFFERENT']),
+    })
+    .strict(),
+  /** From the takeUforward content script only. */
+  z
+    .object({
+      type: z.literal('TUF_SHEET_TICK'),
+      slug: z.string().refine(isValidSlug),
+      title: z.string().trim().min(1).max(200),
+    })
+    .strict(),
+  z.object({ type: z.literal('TUF_SHEET_OPENED') }).strict(),
   /** Only honoured in the e2e test build. */
   z.object({ type: z.literal('TEST_SET_CLOCK'), nowMs: z.number().int().nonnegative() }).strict(),
 ]);
@@ -47,6 +68,7 @@ export const CommandResultSchema = z.discriminatedUnion('ok', [
       'INVALID_COMMAND',
       'ACTIVE_CHALLENGE_EXISTS',
       'INVALID_CONFIG',
+      'INTEGRATION_FAILED',
       'INTERNAL',
     ]),
     issues: z.array(z.string()).optional(),
@@ -54,3 +76,10 @@ export const CommandResultSchema = z.discriminatedUnion('ok', [
 ]);
 
 export type CommandResult = z.infer<typeof CommandResultSchema>;
+
+/** Commands a takeUforward content script may send; everything else is extension-pages only. */
+export const CONTENT_SCRIPT_COMMANDS: ReadonlySet<Command['type']> = new Set([
+  'TUF_SHEET_TICK',
+  'TUF_SHEET_OPENED',
+]);
+export const TUF_ORIGIN = 'https://takeuforward.org/';

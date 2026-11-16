@@ -8,6 +8,7 @@ import { ProgressBar } from '../design-system/ProgressBar';
 import { Skeleton } from '../design-system/Skeleton';
 import { plural } from '../format';
 import { useDashboard } from '../hooks/useDashboard';
+import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
 import { penaltyHint } from '../views/penaltyHint';
 
 interface PopupAppProps {
@@ -58,6 +59,7 @@ function Summary({ view }: { view: DashboardView }) {
 
 export function PopupApp({ openDashboard = openDashboardSidePanel }: PopupAppProps) {
   const state = useDashboard();
+  useRefreshOnOpen();
   const [error, setError] = useState<string | null>(null);
 
   const handleOpen = async () => {

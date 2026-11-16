@@ -13,7 +13,7 @@ describe('manifest permissions', () => {
     expect(manifest.permissions).toEqual(['sidePanel', 'alarms']);
   });
 
-  it('requests no host permissions yet', () => {
-    expect(manifest.host_permissions).toBeUndefined();
+  it('requests host access only to LeetCode (for the username check)', () => {
+    expect(manifest.host_permissions).toEqual(['https://leetcode.com/*']);
   });
 });
