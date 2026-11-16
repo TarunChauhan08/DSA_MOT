@@ -32,6 +32,14 @@ See docs/decisions/0007-owner-decisions-2026-11-16.md. LeetCode via username (AD
 - `npm run test:e2e` (Chrome for Testing 153) → 4/4 ✓: popup renders + disclaimer, side panel navigation, options opens on Settings, dark theme default.
 - Domain/React lint rules confirmed to fire on probe files.
 
-**Not verified:** CI workflow has not run on GitHub (no remote). Build has not been run on the owner's Windows machine.
+**Verified later:** CI passed on GitHub (run 43784143305). Build not yet run on the owner's Windows machine.
 
 **Known limitations:** no extension icons yet (Chrome shows a default letter icon) — planned with the design pass in Phase 3; all views are honest empty states; light-theme toggle needs settings storage (Phase 3+); moderate dev-only `minimatch` audit advisory (ADR-0008).
+
+## Phase 2 — Data & Domain (2026-11-16)
+
+**Implemented:** pure domain (money in paise, Kolkata calendar, 7/15/30 plans, penalty fold, per-day counting with manual→verified upgrade, cross-platform identity, streaks, heatmap intensity); Dexie schema v1 + migration harness; Zod boundary for completion events; use cases `startChallenge`, `recordCompletion`, `decideMapping`, `finalizeDueDays` (idempotent catch-up + late-data revision with audit). Docs: DOMAIN_MODEL.md, DATA_MODEL.md, ADR-0009.
+
+**Verified (actual runs):** `npm run check` ✓ — 174 tests (unit + property + integration); coverage domain ≥ 95% lines / ≥ 90% branches ✓; e2e 4/4 ✓.
+
+**Not done in this phase (by design, ADR-0009):** service-worker wiring, `storage`/`alarms` permissions, any UI for challenges (Phase 3). CI action bump to v7 not yet run on GitHub.
