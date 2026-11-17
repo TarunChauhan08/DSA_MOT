@@ -2,17 +2,10 @@ import type { DayKey } from '../domain/calendar';
 import type { DayOutcome } from '../domain/challenge/evaluate';
 import type { EntryStatus, Evidence } from '../domain/completion/counting';
 import type { Platform } from '../domain/identity/identity';
+import { formatRupees } from '../domain/money';
 
-const PAISE_PER_RUPEE = 100;
-const rupeeGrouping = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
-
-/** ₹1,234 or ₹6.67 — formatted from integer paise without floating-point maths. */
-export function formatInr(paiseAmount: number): string {
-  const rupees = Math.floor(paiseAmount / PAISE_PER_RUPEE);
-  const rest = paiseAmount % PAISE_PER_RUPEE;
-  const fraction = rest === 0 ? '' : `.${String(rest).padStart(2, '0')}`;
-  return `₹${rupeeGrouping.format(rupees)}${fraction}`;
-}
+/** ₹1,234 or ₹6.67 (domain formatter, integer paise). */
+export const formatInr = formatRupees;
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', {
   weekday: 'short',
@@ -74,4 +67,9 @@ export function formatAgo(nowMs: number, thenMs: number): string {
   if (diff < HOUR_MS) return `${String(Math.floor(diff / MINUTE_MS))} min ago`;
   if (diff < DAY_MS) return `${String(Math.floor(diff / HOUR_MS))} h ago`;
   return `${plural(Math.floor(diff / DAY_MS), 'day')} ago`;
+}
+
+/** "5-day streak" (adjective form). */
+export function streakLabel(days: number): string {
+  return `${String(days)}-day streak`;
 }

@@ -30,8 +30,12 @@ import {
   type StreakStats,
 } from '../domain/streak/streak';
 import type { DsaDatabase } from '../persistence/db';
-import type { ChallengeRecord, ChallengeStatus } from '../persistence/records';
+import type { ChallengeRecord, ChallengeStatus, PenaltyRecord } from '../persistence/records';
+import { completionRate, type CompletionRate } from '../domain/analytics/rates';
+import { penaltyStats, type PenaltyStats } from '../domain/analytics/penaltyStats';
+import { savingForOneMore, urgencyLevel, type Urgency } from '../domain/analytics/nudges';
 import { deriveChallenge, toFacts } from './derive';
+import { readSettings, type Settings } from './settings';
 import {
   META_KEYS,
   readHealth,
@@ -110,6 +114,23 @@ export interface DuplicateSuggestionView {
   readonly titleB: string;
 }
 
+export interface LedgerEntry {
+  readonly challengeId: string;
+  readonly planDays: number;
+  readonly day: DayKey;
+  readonly ratePaise: Paise | null;
+  readonly penaltyPaise: Paise;
+  /** Amount before the latest revision (late data), if it changed. */
+  readonly previousPenaltyPaise: Paise | null;
+  readonly revision: number;
+}
+
+export interface TrendPoint {
+  readonly day: DayKey;
+  readonly penaltyPaise: Paise;
+  readonly outcome: DayOutcome;
+}
+
 export interface DashboardView {
   readonly nowMs: number;
   readonly today: DayKey;
@@ -125,7 +146,26 @@ export interface DashboardView {
   readonly integrations: IntegrationsView;
   /** Cross-platform problems with identical titles awaiting a same/different decision. */
   readonly duplicateSuggestions: readonly DuplicateSuggestionView[];
+  readonly settings: Settings;
+  /** Milliseconds until today's local midnight. */
+  readonly msLeftToday: number;
+  readonly urgency: Urgency;
+  /** Paise saved by one more solve today (negative while grace covers a zero day); null outside a challenge. */
+  readonly savingForOneMorePaise: number | null;
+  /** Every day from the first challenge to today, for streaks and the heatmap. */
+  readonly history: readonly DayActivity[];
+  readonly rates: { readonly week: CompletionRate; readonly month: CompletionRate };
+  /** All evaluated challenge days across challenges. */
+  readonly penalty: PenaltyStats;
+  /** Last evaluated challenge days, oldest first (max 30). */
+  readonly penaltyTrend: readonly TrendPoint[];
+  /** Persisted ledger: latest revision of every charged or revised day, newest first. */
+  readonly ledger: readonly LedgerEntry[];
 }
+
+const TREND_DAYS = 30;
+const WEEK_DAYS = 7;
+const MONTH_DAYS = 30;
 
 function inForce(day: DayKey, challenges: readonly ChallengeRecord[]): ChallengeRecord | null {
   let found: ChallengeRecord | null = null;
@@ -160,9 +200,16 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
   ).map((d) => ({ ...d, titleA: titles.get(d.a) ?? d.a, titleB: titles.get(d.b) ?? d.b }));
 
   let current: CurrentChallengeView | null = null;
+  let savingForOneMorePaise: number | null = null;
   const list: ChallengeListItem[] = [];
+  const evaluated: TrendPoint[] = [];
   for (const c of challenges) {
     const derived = deriveChallenge(c.config, c.startDay, byDay, nowMs);
+    derived.closedResults.forEach((r, i) => {
+      const day = derived.dayKeys[i];
+      if (day !== undefined)
+        evaluated.push({ day, penaltyPaise: r.penaltyPaise, outcome: r.outcome });
+    });
     const summary = summarize(c.config, derived.closedResults);
     const rule = PLAN_RULES[c.config.planDays];
     list.push({
@@ -178,6 +225,11 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
     });
     if (derived.todayIndex === null || derived.projectedToday === null) continue;
     const todayIndex = derived.todayIndex;
+    savingForOneMorePaise = savingForOneMore(
+      c.config,
+      derived.closedResults.map((r) => r.solved),
+      derived.projectedToday.solved,
+    );
     current = {
       id: c.id,
       config: c.config,
@@ -260,12 +312,17 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
     });
   }
 
+  const settings = await readSettings(db);
+  const msLeftToday = startOfDayMs(addDays(today, 1), tz) - nowMs;
+  const todayTarget = targetForDay(today, starts);
+  const ledger = buildLedger(await db.penaltyRecords.toArray(), challenges);
+
   return {
     nowMs,
     today,
     hasAnyChallenge: challenges.length > 0,
     current,
-    todayTarget: targetForDay(today, starts),
+    todayTarget,
     todaySolved: todayCount.count,
     todayEntries,
     streak: computeStreaks(activity, today),
@@ -280,5 +337,52 @@ export async function loadDashboard(db: DsaDatabase, nowMs: number): Promise<Das
       tuf: { health: await readHealth(db, META_KEYS.tufHealth) },
     },
     duplicateSuggestions,
+    settings,
+    msLeftToday,
+    urgency: urgencyLevel(msLeftToday, todayTarget !== null && todayCount.count >= todayTarget),
+    savingForOneMorePaise,
+    history: activity,
+    rates: {
+      week: completionRate(activity, today, WEEK_DAYS),
+      month: completionRate(activity, today, MONTH_DAYS),
+    },
+    penalty: penaltyStats(
+      evaluated.map((e) => ({
+        penaltyPaise: e.penaltyPaise,
+        penalized: e.outcome === 'PARTIAL_PENALIZED' || e.outcome === 'ZERO_PENALIZED',
+      })),
+    ),
+    penaltyTrend: evaluated.sort((a, b) => (a.day < b.day ? -1 : 1)).slice(-TREND_DAYS),
+    ledger,
   };
+}
+
+function buildLedger(
+  records: readonly PenaltyRecord[],
+  challenges: readonly ChallengeRecord[],
+): LedgerEntry[] {
+  const plans = new Map(challenges.map((c) => [c.id, c.config.planDays]));
+  const byDay = new Map<string, PenaltyRecord[]>();
+  for (const r of records) {
+    const key = `${r.challengeId}|${r.day}`;
+    byDay.set(key, [...(byDay.get(key) ?? []), r]);
+  }
+  const entries: LedgerEntry[] = [];
+  for (const rows of byDay.values()) {
+    rows.sort((a, b) => a.revision - b.revision);
+    const latest = rows.at(-1);
+    if (latest === undefined) continue;
+    const previous = rows.length > 1 ? rows.at(-2) : undefined;
+    if (latest.penaltyPaise === 0 && previous === undefined) continue;
+    entries.push({
+      challengeId: latest.challengeId,
+      planDays: plans.get(latest.challengeId) ?? 0,
+      day: latest.day,
+      ratePaise: latest.ratePaise,
+      penaltyPaise: latest.penaltyPaise,
+      previousPenaltyPaise: previous?.penaltyPaise ?? null,
+      revision: latest.revision,
+    });
+  }
+  return entries.sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0));
 }

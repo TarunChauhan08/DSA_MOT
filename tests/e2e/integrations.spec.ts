@@ -1,5 +1,5 @@
 import type { BrowserContext } from '@playwright/test';
-import { expect, send, test } from './fixtures';
+import { expect, ring, send, test } from './fixtures';
 
 const nowSeconds = () => String(Math.floor(Date.now() / 1000) - 60);
 
@@ -97,7 +97,7 @@ test('connect LeetCode by username: verified solve counts, stats card shows, no 
   for (const r of requests) expect(r.cookie).toBeUndefined();
 
   await page.getByRole('link', { name: 'Today' }).click();
-  await expect(page.getByLabel('Solved today')).toHaveText('1 / 3');
+  await expect(ring(page, 1, 3)).toBeVisible();
   await expect(page.getByText('Verified')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Two Sum' })).toHaveAttribute(
     'href',
@@ -140,7 +140,7 @@ test('ticking a problem on the Striver sheet counts as "Sheet marked"; theory le
 
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await expect(page.getByLabel('Solved today')).toHaveText('1 / 3');
+  await expect(ring(page, 1, 3)).toBeVisible();
   await expect(page.getByText('Sheet marked')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Selection Sort' })).toHaveAttribute(
     'href',
@@ -169,9 +169,9 @@ test('a same-named problem from both platforms can be merged into one', async ({
     slug: 'two-sum-problem',
     title: 'Two Sum',
   });
-  await expect(page.getByLabel('Solved today')).toHaveText('2 / 3');
+  await expect(ring(page, 2, 3)).toBeVisible();
   await expect(page.getByText('Same problem on both platforms?')).toBeVisible();
   await page.getByRole('button', { name: 'Same problem' }).click();
-  await expect(page.getByLabel('Solved today')).toHaveText('1 / 3');
+  await expect(ring(page, 1, 3)).toBeVisible();
   await expect(page.getByText('Same problem on both platforms?')).toHaveCount(0);
 });

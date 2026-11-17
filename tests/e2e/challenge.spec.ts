@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, kolkataDayStart, send, test } from './fixtures';
+import { expect, kolkataDayStart, ring, send, test } from './fixtures';
 
 async function setDay(page: Page, dayOffset: number) {
   expect(await send(page, { type: 'TEST_SET_CLOCK', nowMs: kolkataDayStart(dayOffset) })).toEqual({
@@ -23,7 +23,6 @@ test('full 7-day challenge lifecycle with grace, partial, missed days and late f
 }) => {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  const solved = page.getByLabel('Solved today');
 
   await test.step('onboarding → setup → confirm → start', async () => {
     await page.getByRole('link', { name: 'Set up your first challenge' }).click();
@@ -33,8 +32,10 @@ test('full 7-day challenge lifecycle with grace, partial, missed days and late f
     await expect(page.getByText('Once started, these settings are locked')).toBeVisible();
     await page.getByRole('button', { name: 'Start challenge' }).click();
     await expect(page).toHaveURL(/#\/today$/);
-    await expect(solved).toHaveText('0 / 4');
-    await expect(page.getByText(/uses a grace day/)).toBeVisible();
+    await expect(ring(page, 0, 4)).toBeVisible();
+    await expect(
+      page.getByText('Ending at zero uses 1 of your 2 grace days. Hit all 4 to keep it.'),
+    ).toBeVisible();
   });
 
   await test.step('day 1: complete the target (one duplicate is not counted)', async () => {
@@ -44,21 +45,22 @@ test('full 7-day challenge lifecycle with grace, partial, missed days and late f
       'Merge Intervals',
     ]);
     await addProblems(page, ['https://leetcode.com/problems/two-sum/']);
-    await expect(solved).toHaveText('3 / 4');
-    await expect(page.getByText('If the day ended now: ₹5 virtual penalty.')).toBeVisible();
+    await expect(ring(page, 3, 4)).toBeVisible();
+    await expect(page.getByText('₹5 at stake. Each problem now saves ₹5.')).toBeVisible();
     await expect(page.getByText('Duplicate — not counted')).toBeVisible();
     await addProblems(page, ['https://takeuforward.org/practice/dsa/selection-sort']);
-    await expect(solved).toHaveText('4 / 4');
-    await expect(page.getByText('Target met — no virtual penalty today.')).toBeVisible();
+    await expect(ring(page, 4, 4)).toBeVisible();
+    await expect(page.getByText('Done for today.')).toBeVisible();
   });
 
   await test.step('day 2: rolls over at midnight; partial day', async () => {
     await setDay(page, 1);
-    await expect(solved).toHaveText('0 / 4');
-    await expect(page.getByText('1 day streak')).toBeVisible();
+    await expect(ring(page, 0, 4)).toBeVisible();
+    await expect(page.getByText('1-day streak', { exact: true })).toBeVisible();
+    await expect(page.getByText('Your 1-day streak ends at midnight.')).toBeVisible();
     await addProblems(page, ['Two Sum']); // re-solving on a new day counts again
     await addProblems(page, ['Three Sum']);
-    await expect(page.getByText('If the day ended now: ₹10 virtual penalty.')).toBeVisible();
+    await expect(page.getByText('₹10 at stake. Each problem now saves ₹5.')).toBeVisible();
   });
 
   await test.step('days 3–5: grace, grace, then missed after grace runs out', async () => {
@@ -105,7 +107,7 @@ test('full 7-day challenge lifecycle with grace, partial, missed days and late f
     await page.getByRole('link', { name: 'History' }).click();
     await expect(page.getByText('Failed')).toBeVisible();
     // ₹10 (day 2) + ₹40 (day 5) + ₹60 (day 6) + ₹80 (day 7) = ₹190
-    await expect(page.getByText(/1\/5 full days · ₹190/)).toBeVisible();
+    await expect(page.getByText(/1\/5 full days, ₹190/)).toBeVisible();
   });
 
   await test.step('a new challenge can start once the previous one ended', async () => {
@@ -141,9 +143,9 @@ test('popup shows today, grace and potential penalty for an active challenge', a
     }),
   ).toMatchObject({ ok: true });
 
-  await expect(page.getByLabel('Solved today')).toHaveText('1 / 3');
-  await expect(page.getByText('Day 1 of 15 · 3 grace days left · 0/12 full days')).toBeVisible();
-  // 1/3 on the first penalized day: ₹30 × 2/3 = ₹20.
-  await expect(page.getByText('If the day ended now: ₹20 virtual penalty.')).toBeVisible();
+  await expect(ring(page, 1, 3)).toBeVisible();
+  await expect(page.getByText('Day 1 of 15, 0 of 12 full days, 3 grace left')).toBeVisible();
+  // 1/3 on the first penalized day: ₹30 × 2/3 = ₹20; a second solve leaves ₹10.
+  await expect(page.getByText('₹20 at stake. Each problem now saves ₹10.')).toBeVisible();
   await expect(page.getByRole('note')).toContainText('Virtual penalty only.');
 });

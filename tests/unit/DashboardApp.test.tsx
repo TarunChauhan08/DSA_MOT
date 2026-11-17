@@ -14,7 +14,7 @@ describe('DashboardApp', () => {
   it('starts on the initial route and shows onboarding on first run', async () => {
     render(<DashboardApp initialRoute="today" />);
     expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
-    expect(await screen.findByText('Make skipping DSA expensive.')).toBeInTheDocument();
+    expect(await screen.findByText('Make skipping DSA cost something.')).toBeInTheDocument();
   });
 
   it('switches views on hash change', async () => {
@@ -36,7 +36,7 @@ describe('DashboardApp', () => {
 
   it('shows no numeric metrics while there is no data', async () => {
     const { container } = render(<DashboardApp initialRoute="today" />);
-    await screen.findByText('Make skipping DSA expensive.');
+    await screen.findByText('Make skipping DSA cost something.');
     expect(container.querySelector('main')?.textContent).not.toMatch(/₹|\d+\s*\/\s*\d+/);
   });
 });

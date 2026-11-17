@@ -4,7 +4,7 @@ import type { Route } from '../routing/routes';
 import { ChallengeView } from './ChallengeView';
 import { HistoryView } from './HistoryView';
 import { IntegrationsView } from './IntegrationsView';
-import { SettingsView } from './PlaceholderViews';
+import { SettingsView } from './SettingsView';
 import { SetupView } from './SetupView';
 import { TodayView } from './TodayView';
 

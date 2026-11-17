@@ -59,3 +59,9 @@ See docs/decisions/0007-owner-decisions-2026-11-16.md. LeetCode via username (AD
 **Verified (actual runs):** `npm run check` ✓ (274 tests); e2e 10/10 ✓ — real worker against mocked LeetCode GraphQL (no cookies sent), unknown username error, real content script on a page built from recorded takeUforward markup (problem counted as "Sheet marked", lesson ignored), duplicate merge.
 
 **Not verified (needs the owner):** LeetCode request from the extension origin; a sheet tick while signed in to takeUforward. Checklist in docs/INTEGRATIONS.md. takeUforward judge verdicts not implemented.
+
+## Phase 5 — Accountability (2026-11-18)
+
+**Implemented:** behavioural design pass (day ring with time-pressure colour, ₹ at stake, value of the next solve, streak-at-risk warning, countdown, grace dots, challenge day strip, one restrained reward); shared colour code with shapes and labels; History with 18-week heatmap, current/longest streak, full and incomplete days, problems solved, 7/30-day completion rates, penalty stats, trend bars and persisted ledger with revisions; Settings (theme, reminders, last call, target met, morning summary, manual default); notifications with once-only log (schema v2); toolbar badge; light theme; Anek Latin typeface. docs/DESIGN.md, ADR-0012.
+
+**Verified (actual runs):** `npm run check` ✓ (320 tests); e2e 13/13 ✓ incl. reminder sent once, badge slate → amber → ✓, theme persists across pages, history from real data. Screens reviewed visually in dark and light.

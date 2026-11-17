@@ -85,7 +85,11 @@ function Summary({ input }: { input: StartChallengeInput }) {
 }
 
 export function SetupView({ view }: { view: DashboardView }) {
-  const [draft, setDraft] = useState<Draft>({ planDays: 7, countManual: true, ...DEFAULTS });
+  const [draft, setDraft] = useState<Draft>({
+    planDays: 7,
+    countManual: view.settings.countManualDefault,
+    ...DEFAULTS,
+  });
   const [step, setStep] = useState<'edit' | 'confirm'>('edit');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

@@ -41,3 +41,13 @@ export function roundHalfUpDiv(numerator: number, denominator: number): number {
 export function sumPaise(amounts: readonly Paise[]): Paise {
   return paise(amounts.reduce<number>((total, amount) => total + amount, 0));
 }
+
+const rupeeGrouping = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+/** ₹1,234 or ₹6.67 — formatted from integer paise without floating-point maths. */
+export function formatRupees(amount: number): string {
+  const rupees = Math.floor(amount / PAISE_PER_RUPEE);
+  const rest = amount % PAISE_PER_RUPEE;
+  const fraction = rest === 0 ? '' : `.${String(rest).padStart(2, '0')}`;
+  return `₹${rupeeGrouping.format(rupees)}${fraction}`;
+}
