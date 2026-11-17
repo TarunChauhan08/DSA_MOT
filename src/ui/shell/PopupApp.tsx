@@ -10,6 +10,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
 import { useTheme } from '../hooks/useTheme';
 import { TodayHero } from '../views/TodayHero';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface PopupAppProps {
   openDashboard?: () => Promise<void>;
@@ -72,7 +73,11 @@ export function PopupApp({ openDashboard = openDashboardSidePanel }: PopupAppPro
           Could not load your data: {state.message}
         </p>
       )}
-      {state.status === 'ready' && <Summary view={state.view} />}
+      {state.status === 'ready' && (
+        <ErrorBoundary>
+          <Summary view={state.view} />
+        </ErrorBoundary>
+      )}
 
       <Button onClick={() => void handleOpen()}>Open dashboard</Button>
       {error !== null && (

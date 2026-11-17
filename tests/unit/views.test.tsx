@@ -189,3 +189,26 @@ describe('SettingsView', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Settings saved.');
   });
 });
+
+describe('ErrorBoundary', () => {
+  it('contains a crashing view and keeps the rest of the page', async () => {
+    const { ErrorBoundary } = await import('../../src/ui/shell/ErrorBoundary');
+    const Boom = () => {
+      throw new Error('kaboom');
+    };
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    render(
+      <div>
+        <ErrorBoundary>
+          <Boom />
+        </ErrorBoundary>
+        <p>still here</p>
+      </div>,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'This view hit an error and was stopped. Your data is safe.kaboom',
+    );
+    expect(screen.getByText('still here')).toBeInTheDocument();
+    spy.mockRestore();
+  });
+});

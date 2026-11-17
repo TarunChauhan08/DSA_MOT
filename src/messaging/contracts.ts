@@ -3,6 +3,9 @@ import { MAX_DAILY_TARGET } from '../domain/challenge/config';
 import { isValidSlug } from '../domain/identity/identity';
 import { SettingsSchema } from '../application/settings';
 
+/** Generous: a year of daily practice is well under 1 MB. */
+export const MAX_BACKUP_CHARS = 20_000_000;
+
 /** Whole rupees; converted to paise in the service worker. */
 const MAX_PENALTY_RUPEES = 100_000;
 const rupees = z.number().int().min(0).max(MAX_PENALTY_RUPEES);
@@ -36,6 +39,11 @@ export const CommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('CONNECT_LEETCODE'), username: z.string().max(60) }).strict(),
   z.object({ type: z.literal('DISCONNECT_LEETCODE') }).strict(),
   z.object({ type: z.literal('UPDATE_SETTINGS'), settings: SettingsSchema }).strict(),
+  /** The worker re-validates the file itself; the page's preview is never trusted. */
+  z
+    .object({ type: z.literal('IMPORT_BACKUP'), json: z.string().min(2).max(MAX_BACKUP_CHARS) })
+    .strict(),
+  z.object({ type: z.literal('RESET_DATA'), confirmation: z.literal('RESET') }).strict(),
   /** Popup/dashboard opened: check integrations now (debounced in the worker). */
   z.object({ type: z.literal('REFRESH_INTEGRATIONS') }).strict(),
   z
@@ -71,6 +79,8 @@ export const CommandResultSchema = z.discriminatedUnion('ok', [
       'ACTIVE_CHALLENGE_EXISTS',
       'INVALID_CONFIG',
       'INTEGRATION_FAILED',
+      'BACKUP_REJECTED',
+      'BACKUP_DUPLICATE',
       'INTERNAL',
     ]),
     issues: z.array(z.string()).optional(),

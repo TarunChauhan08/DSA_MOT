@@ -15,11 +15,14 @@ const MESSAGES: Record<Exclude<CommandResult, { ok: true }>['error'], string> = 
     'You already have an active challenge. It must finish before a new one starts.',
   INVALID_CONFIG: 'Some challenge settings are out of range.',
   INTEGRATION_FAILED: 'The integration could not be updated.',
+  BACKUP_REJECTED: 'The backup could not be imported.',
+  BACKUP_DUPLICATE: 'This backup matches your current data. Nothing changed.',
   INTERNAL: 'Something went wrong in the background. Please try again.',
 };
 
 export function describeFailure(result: Exclude<CommandResult, { ok: true }>): string {
-  return result.error === 'INTEGRATION_FAILED' && result.issues?.[0] !== undefined
+  return (result.error === 'INTEGRATION_FAILED' || result.error === 'BACKUP_REJECTED') &&
+    result.issues?.[0] !== undefined
     ? result.issues[0]
     : MESSAGES[result.error];
 }

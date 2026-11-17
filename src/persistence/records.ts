@@ -70,7 +70,8 @@ export type AuditType =
   | 'DAY_REVISED'
   | 'CHALLENGE_COMPLETED'
   | 'CHALLENGE_OUTCOME_REVISED'
-  | 'MAPPING_DECIDED';
+  | 'MAPPING_DECIDED'
+  | 'BACKUP_IMPORTED';
 
 export interface AuditEvent {
   readonly seq?: number;

@@ -6,6 +6,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
 import { useTheme } from '../hooks/useTheme';
 import { VIEWS } from '../views';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const NAV_ROUTES: readonly Route[] = ['today', 'challenge', 'history', 'integrations', 'settings'];
 
@@ -60,7 +61,11 @@ export function DashboardApp({ initialRoute }: { initialRoute: Route }) {
             Could not load your data: {state.message}
           </p>
         )}
-        {state.status === 'ready' && <View view={state.view} />}
+        {state.status === 'ready' && (
+          <ErrorBoundary resetKey={route}>
+            <View view={state.view} />
+          </ErrorBoundary>
+        )}
       </main>
 
       <footer className="border-t border-border px-4 py-3">

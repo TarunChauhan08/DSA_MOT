@@ -7,6 +7,7 @@ import { Button } from '../design-system/Button';
 import { Section } from '../design-system/Section';
 import { Segmented } from '../design-system/Segmented';
 import { Toggle } from '../design-system/Toggle';
+import { DataSection } from './DataSection';
 
 const DEADLINE_OPTIONS = [0, 30, 60, 120] as const;
 
@@ -148,6 +149,8 @@ export function SettingsView({ view }: { view: DashboardView }) {
           </p>
         )}
       </div>
+
+      <DataSection />
     </div>
   );
 }

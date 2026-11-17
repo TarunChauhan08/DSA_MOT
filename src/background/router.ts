@@ -19,6 +19,7 @@ import {
 } from '../messaging/contracts';
 import { noteSheetOpened, recordSheetTick } from '../application/tufIntake';
 import { writeSettings } from '../application/settings';
+import { importBackup, parseBackup, resetAllData } from '../application/backup';
 import { currentTimeMs, setTestClock } from '../platform/clock';
 import type { DsaDatabase } from '../persistence/db';
 
@@ -104,6 +105,22 @@ export async function handleCommand(
     }
     case 'UPDATE_SETTINGS': {
       await writeSettings(ctx.db, command.settings);
+      return { ok: true };
+    }
+    case 'IMPORT_BACKUP': {
+      const parsed = await parseBackup(command.json);
+      if (!parsed.ok) return { ok: false, error: 'BACKUP_REJECTED', issues: [parsed.reason] };
+      const deps = await depsAt(ctx);
+      const result = await importBackup(ctx.db, parsed.backup, deps.clock.now());
+      return result.ok
+        ? {
+            ok: true,
+            detail: `${String(result.completions)} problems, ${String(result.challenges)} challenges`,
+          }
+        : { ok: false, error: 'BACKUP_DUPLICATE' };
+    }
+    case 'RESET_DATA': {
+      await resetAllData(ctx.db);
       return { ok: true };
     }
     case 'DISCONNECT_LEETCODE': {

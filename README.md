@@ -1,36 +1,31 @@
 # DSA Discipline
 
-A personal, local-first Chrome extension that makes daily DSA practice stick: one unified daily target across LeetCode and Striver's A2Z sheet, 7/15/30-day challenges, honest streaks, and a **virtual** INR penalty for missed targets.
+A personal Chrome extension that makes daily DSA practice stick. One daily target across **LeetCode** and **Striver's A2Z sheet**, 7/15/30-day challenges with grace days, honest streaks, a heatmap, reminders — and a **virtual** rupee penalty that grows when you skip.
 
 > Virtual penalty only. No actual money is collected, transferred, owed or donated.
 
-**Status:** Phase 5 — challenges, automatic LeetCode/Striver tracking, streaks, heatmap, virtual penalty ledger, reminders and settings. See `PROJECT_STATUS.md`.
+## Install (Windows, macOS, Linux)
 
-## Setup (Windows, macOS or Linux)
-
-Requires Node.js 22+.
+Requires Node.js 22+ and Chrome 116+.
 
 ```sh
 npm ci
 npm run build
 ```
 
-Load it in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select `.output/chrome-mv3`.
+Chrome → `chrome://extensions` → turn on **Developer mode** → **Load unpacked** → choose `.output/chrome-mv3`. Pin the extension; the badge shows how many problems are left today.
 
-For development with hot reload: `npm run dev`.
+## Use
 
-## Checks
+1. **Today → Set up your first challenge:** plan, daily target, penalty. Day 1 is today; settings lock once started.
+2. **Integrations:** connect your LeetCode username (no password). Tick problems on the Striver A2Z sheet while signed in to takeUforward.
+3. Anything else: add it on **Today** by link or name (labelled manual).
+4. **History** shows the heatmap, streaks, completion rates and the penalty ledger. **Settings** has theme, reminders and backups.
 
-```sh
-npm run check                       # typecheck, lint, format, unit tests, build
-npx playwright install chromium     # once
-npm run test:e2e                    # loads the built extension in Chromium
-```
+Everything stays on your computer. Download a backup from Settings before switching browsers.
 
-Branded Google Chrome no longer honours `--load-extension`, so e2e tests use Playwright's Chromium (or set `CHROME_PATH` to a Chrome for Testing binary).
+## Develop
 
-## Docs
+`npm run dev` · `npm run check` (typecheck, lint, format, tests, build) · `npm run test:e2e` (needs `npx playwright install chromium` or `CHROME_PATH`).
 
-- Requirements: `docs/PRD.md`
-- Architecture proposal and owner decisions: `docs/PHASE_0_PROPOSAL.md`
-- Decision records: `docs/decisions/`
+Docs: [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Domain](docs/DOMAIN_MODEL.md) · [Data](docs/DATA_MODEL.md) · [Integrations](docs/INTEGRATIONS.md) · [Design](docs/DESIGN.md) · [Security](docs/SECURITY.md) · [Testing](docs/TESTING.md) · [Roadmap](docs/ROADMAP.md) · [Decisions](docs/decisions/) · [Status](PROJECT_STATUS.md)

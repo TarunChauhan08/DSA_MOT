@@ -65,3 +65,11 @@ See docs/decisions/0007-owner-decisions-2026-11-16.md. LeetCode via username (AD
 **Implemented:** behavioural design pass (day ring with time-pressure colour, ₹ at stake, value of the next solve, streak-at-risk warning, countdown, grace dots, challenge day strip, one restrained reward); shared colour code with shapes and labels; History with 18-week heatmap, current/longest streak, full and incomplete days, problems solved, 7/30-day completion rates, penalty stats, trend bars and persisted ledger with revisions; Settings (theme, reminders, last call, target met, morning summary, manual default); notifications with once-only log (schema v2); toolbar badge; light theme; Anek Latin typeface. docs/DESIGN.md, ADR-0012.
 
 **Verified (actual runs):** `npm run check` ✓ (320 tests); e2e 13/13 ✓ incl. reminder sent once, badge slate → amber → ✓, theme persists across pages, history from real data. Screens reviewed visually in dark and light.
+
+## Phase 6 — Production hardening (2026-11-18)
+
+**Implemented:** backup download / restore (checksum, version, migration, per-record validation, copy before restore, duplicate detection); delete-all with typed RESET; per-view error boundary; docs ARCHITECTURE, TESTING, SECURITY, ROADMAP; ADR-0013.
+
+**Verified (actual runs):** `npm run check` ✓; e2e 19/19 ✓ incl. backup → reset → restore in Chrome, damaged file rejected, worker stopped via CDP with two midnights caught up on wake, axe clean on every screen (dark + light), release build loads and refuses the test clock, size guard, popup speed; 1-year dataset dashboard < 500 ms.
+
+**Open:** owner live checks for LeetCode-from-extension and signed-in sheet ticks (docs/INTEGRATIONS.md).

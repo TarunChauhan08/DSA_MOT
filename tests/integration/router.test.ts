@@ -185,3 +185,38 @@ describe('handleCommand — takeUforward content script', () => {
     });
   });
 });
+
+describe('handleCommand — data management', () => {
+  it('resets only with the exact typed confirmation', async () => {
+    const c = ctx();
+    await handleCommand(c, start, page);
+    expect(
+      await handleCommand(c, { type: 'RESET_DATA', confirmation: 'reset' }, page),
+    ).toMatchObject({ ok: false, error: 'INVALID_COMMAND' });
+    expect(await c.db.challenges.count()).toBe(1);
+    expect(await handleCommand(c, { type: 'RESET_DATA', confirmation: 'RESET' }, page)).toEqual({
+      ok: true,
+    });
+    expect(await c.db.challenges.count()).toBe(0);
+  });
+
+  it('re-validates backups in the worker and reports why a file is rejected', async () => {
+    const c = ctx();
+    expect(
+      await handleCommand(c, { type: 'IMPORT_BACKUP', json: '{"format":"other"}' }, page),
+    ).toEqual({
+      ok: false,
+      error: 'BACKUP_REJECTED',
+      issues: ['This file is not a DSA Discipline backup.'],
+    });
+  });
+
+  it('never lets a takeUforward page reset or import', async () => {
+    const c = ctx();
+    const tufPage = { id: EXT_ID, url: 'https://takeuforward.org/x' };
+    expect(await handleCommand(c, { type: 'RESET_DATA', confirmation: 'RESET' }, tufPage)).toEqual({
+      ok: false,
+      error: 'FORBIDDEN',
+    });
+  });
+});
