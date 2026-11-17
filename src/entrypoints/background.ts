@@ -4,6 +4,12 @@ import { randomIds } from '../application/ports';
 import { syncLeetCode } from '../application/leetcodeSync';
 import { finalizeDueDays } from '../application/useCases';
 import { handleCommand } from '../background/router';
+import {
+  openDashboardOnClick,
+  refreshBadge,
+  scheduleNotificationAlarm,
+  sendDueNotifications,
+} from '../background/notifier';
 import { scheduleAlarms } from '../background/scheduler';
 import { currentTimeMs } from '../platform/clock';
 import { TEST_CLOCK_ENABLED } from '../platform/env';
@@ -19,6 +25,13 @@ export default defineBackground(() => {
     fetchFn: (url: string, init: RequestInit) => fetch(url, init),
   };
 
+  /** Badge, due notifications and the next reminder alarm, after any change or wake-up. */
+  const afterChange = async (now: number) => {
+    await refreshBadge(db, now);
+    await sendDueNotifications(db, now);
+    await scheduleNotificationAlarm(db, now);
+  };
+
   // Never rely on the worker staying alive: catch up on every wake-up (ADR-0005).
   const catchUp = async (trigger: string) => {
     const now = await currentTimeMs(db, TEST_CLOCK_ENABLED);
@@ -27,6 +40,7 @@ export default defineBackground(() => {
     await scheduleAlarms(now);
     const sync = await syncLeetCode(deps, ctx.fetchFn, 'schedule');
     if (sync.status === 'error') console.warn('[dsa] LeetCode check failed', sync.error);
+    await afterChange(now);
     if (report.finalized + report.revised + report.completed > 0) {
       console.info(`[dsa] catch-up (${trigger})`, report);
     }
@@ -47,12 +61,18 @@ export default defineBackground(() => {
     runCatchUp(alarm.name);
   });
   browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
-    handleCommand(ctx, message, sender).then(sendResponse, (error: unknown) => {
-      console.error('[dsa] command failed', error);
-      sendResponse({ ok: false, error: 'INTERNAL' });
-    });
+    handleCommand(ctx, message, sender)
+      .then(async (result) => {
+        sendResponse(result);
+        if (result.ok) await afterChange(await currentTimeMs(db, TEST_CLOCK_ENABLED));
+      })
+      .catch((error: unknown) => {
+        console.error('[dsa] command failed', error);
+        sendResponse({ ok: false, error: 'INTERNAL' });
+      });
     return true; // keep the channel open for the async response
   });
 
+  openDashboardOnClick();
   runCatchUp('wake');
 });

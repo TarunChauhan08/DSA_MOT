@@ -83,3 +83,8 @@ export interface MetaRecord {
   readonly key: string;
   readonly value: unknown;
 }
+
+export interface NotificationLogRecord {
+  readonly eventKey: string;
+  readonly sentAtMs: number;
+}

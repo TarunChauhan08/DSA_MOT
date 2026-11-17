@@ -24,6 +24,7 @@
     "build:e2e": "wxt build --mode e2e"
   },
   "dependencies": {
+    "@fontsource-variable/anek-latin": "5.3.0",
     "dexie": "4.4.7",
     "react": "19.3.1",
     "react-dom": "19.3.1",

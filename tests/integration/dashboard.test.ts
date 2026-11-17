@@ -189,3 +189,68 @@ describe('loadDashboard — integrations and duplicates', () => {
     expect(view.todaySolved).toBe(1);
   });
 });
+
+describe('loadDashboard — accountability analytics', () => {
+  async function workedExample() {
+    const deps = makeDeps('2026-11-16T09:00');
+    await startChallenge(deps, config());
+    for (const [i, n] of [4, 3, 0, 0, 2, 0, 4].entries()) {
+      deps.clock.at(`2026-11-${String(16 + i)}T12:00`);
+      for (let k = 0; k < n; k += 1) await manual(deps, `p${String(i)}-${String(k)}`);
+    }
+    return deps;
+  }
+
+  it('penalty stats, trend and persisted ledger after the worked example', async () => {
+    const deps = await workedExample();
+    deps.clock.at('2026-11-23T10:00');
+    await finalizeDueDays(deps);
+    const view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.penalty).toEqual({
+      totalPaise: 8500,
+      highestPaise: 6000,
+      evaluatedDays: 7,
+      penalizedDays: 3,
+      averagePerDayPaise: 1214, // 8500 / 7 = 1214.29
+      averagePerPenalizedDayPaise: 2833,
+    });
+    expect(view.penaltyTrend.map((p) => p.penaltyPaise)).toEqual([0, 500, 0, 0, 2000, 6000, 0]);
+    expect(view.ledger.map((l) => [l.day, l.penaltyPaise])).toEqual([
+      ['2026-11-21', 6000],
+      ['2026-11-20', 2000],
+      ['2026-11-17', 500],
+    ]);
+    expect(view.rates.week).toEqual({ successDays: 2, eligibleDays: 7, percent: 29 });
+  });
+
+  it('shows ledger revisions caused by late data', async () => {
+    const deps = await workedExample();
+    deps.clock.at('2026-11-23T10:00');
+    await finalizeDueDays(deps);
+    await recordCompletion(deps, {
+      evidence: 'LC_RECENT_AC',
+      submissionId: '77',
+      slug: 'late',
+      title: 'Late',
+      sourceTimestampMs: ist('2026-11-17T22:00'),
+    });
+    const view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.ledger.find((l) => l.day === '2026-11-17')).toMatchObject({
+      penaltyPaise: 0,
+      previousPenaltyPaise: 500,
+      revision: 2,
+    });
+    expect(view.penalty.totalPaise).toBe(5000);
+  });
+
+  it('time pressure and the value of one more problem', async () => {
+    const deps = makeDeps('2026-11-16T21:30');
+    await startChallenge(deps, config());
+    await manual(deps, 'a');
+    const view = await loadDashboard(deps.db, deps.clock.now());
+    expect(view.msLeftToday).toBe(150 * 60_000);
+    expect(view.urgency).toBe('heads-up');
+    expect(view.savingForOneMorePaise).toBe(500);
+    expect(view.settings.theme).toBe('dark');
+  });
+});

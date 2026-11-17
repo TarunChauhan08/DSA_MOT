@@ -10,7 +10,7 @@ describe('manifest permissions', () => {
   }
 
   it('requests only the permissions used in this phase', () => {
-    expect(manifest.permissions).toEqual(['sidePanel', 'alarms']);
+    expect(manifest.permissions).toEqual(['sidePanel', 'alarms', 'notifications']);
   });
 
   it('requests host access only to LeetCode (for the username check)', () => {

@@ -51,3 +51,10 @@ export function kolkataDayStart(days: number): number {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(Date.now());
   return Date.parse(`${today}T00:01:00+05:30`) + days * 86_400_000;
 }
+
+/** The day ring announces progress as "N of T problems solved today". */
+export function ring(page: Page, solved: number, target: number) {
+  return page.getByRole('img', {
+    name: `${String(solved)} of ${String(target)} problems solved today`,
+  });
+}

@@ -20,6 +20,7 @@ describe('schema and migrations', () => {
       'completions',
       'mappings',
       'meta',
+      'notificationLog',
       'penaltyRecords',
     ]);
     db.close();
@@ -41,19 +42,40 @@ describe('schema and migrations', () => {
     await old.meta.put({ key: 'theme', value: 'dark' });
     old.close();
 
-    const hypotheticalV2: SchemaVersion = {
-      version: 2,
-      stores: { notificationLog: 'eventKey' },
+    const hypotheticalV3: SchemaVersion = {
+      version: 3,
+      stores: { futureTable: 'id' },
       upgrade: async (tx) => {
         await tx.table('meta').put({ key: 'migratedFrom', value: 1 });
       },
     };
-    const upgraded = new DsaDatabase(name, [...v1, hypotheticalV2]);
+    const upgraded = new DsaDatabase(name, [...SCHEMA_VERSIONS, hypotheticalV3]);
     await upgraded.open();
-    expect(upgraded.verno).toBe(2);
+    expect(upgraded.verno).toBe(3);
     expect(await upgraded.meta.get('theme')).toEqual({ key: 'theme', value: 'dark' });
     expect(await upgraded.meta.get('migratedFrom')).toEqual({ key: 'migratedFrom', value: 1 });
     upgraded.close();
+  });
+
+  it('migrates a real v1 database to v2 without losing data', async () => {
+    const name = `mig-${String(Math.random())}`;
+    const old = new DsaDatabase(name, v1);
+    await old.completions.add({
+      id: 'manual:1',
+      sourceKey: 'lc:two-sum' as never,
+      evidence: 'USER_MANUAL',
+      sourceTimestampMs: 1,
+      discoveredAtMs: 1,
+      title: 'Two Sum',
+      url: 'https://leetcode.com/problems/two-sum/',
+    });
+    old.close();
+    const current = new DsaDatabase(name);
+    await current.open();
+    expect(current.verno).toBe(2);
+    expect(await current.completions.count()).toBe(1);
+    expect(await current.notificationLog.count()).toBe(0);
+    current.close();
   });
 
   it('declares versions in strictly increasing order', () => {

@@ -23,6 +23,11 @@ export const SCHEMA_VERSIONS: readonly SchemaVersion[] = [
       meta: 'key',
     },
   },
+  {
+    // Phase 5: idempotent notifications (each event key is sent at most once).
+    version: 2,
+    stores: { notificationLog: 'eventKey, sentAtMs' },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = SCHEMA_VERSIONS.reduce((m, v) => Math.max(m, v.version), 0);

@@ -18,6 +18,7 @@ import {
   type CommandResult,
 } from '../messaging/contracts';
 import { noteSheetOpened, recordSheetTick } from '../application/tufIntake';
+import { writeSettings } from '../application/settings';
 import { currentTimeMs, setTestClock } from '../platform/clock';
 import type { DsaDatabase } from '../persistence/db';
 
@@ -100,6 +101,10 @@ export async function handleCommand(
       return result.ok
         ? { ok: true, detail: String(result.newSolves) }
         : { ok: false, error: 'INTEGRATION_FAILED', issues: [result.message] };
+    }
+    case 'UPDATE_SETTINGS': {
+      await writeSettings(ctx.db, command.settings);
+      return { ok: true };
     }
     case 'DISCONNECT_LEETCODE': {
       await disconnectLeetCode(await depsAt(ctx));

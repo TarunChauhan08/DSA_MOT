@@ -2,14 +2,14 @@ import { useState } from 'react';
 import type { DashboardView } from '../../application/queries';
 import { openDashboardSidePanel } from '../../platform/sidePanel';
 import { Button } from '../design-system/Button';
+import { DayStrip } from '../design-system/DayStrip';
 import { Disclaimer } from '../design-system/Disclaimer';
 import { EmptyState } from '../design-system/EmptyState';
-import { ProgressBar } from '../design-system/ProgressBar';
 import { Skeleton } from '../design-system/Skeleton';
-import { plural } from '../format';
 import { useDashboard } from '../hooks/useDashboard';
 import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
-import { penaltyHint } from '../views/penaltyHint';
+import { useTheme } from '../hooks/useTheme';
+import { TodayHero } from '../views/TodayHero';
 
 interface PopupAppProps {
   openDashboard?: () => Promise<void>;
@@ -26,32 +26,18 @@ function Summary({ view }: { view: DashboardView }) {
   }
   const { current } = view;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-end justify-between">
-        <p className="text-3xl font-semibold tabular-nums" aria-label="Solved today">
-          {view.todaySolved}
-          <span className="text-lg font-normal text-muted"> / {view.todayTarget ?? '—'}</span>
-        </p>
-        <p className="text-sm text-muted">
-          {view.streak.current > 0
-            ? `${plural(view.streak.current, 'day')} streak`
-            : 'No streak yet'}
-        </p>
-      </div>
-      {view.todayTarget !== null && (
-        <ProgressBar value={view.todaySolved} max={view.todayTarget} label="Today's progress" />
-      )}
+    <div className="flex flex-col gap-4">
+      <TodayHero view={view} compact />
       {current === null ? (
         <p className="text-sm text-muted">No active challenge.</p>
       ) : (
-        <>
-          <p className="text-sm text-muted">
-            Day {current.dayNumber} of {current.planDays} ·{' '}
-            {plural(current.graceRemaining, 'grace day')} left · {current.successDays}/
-            {current.requiredSuccessDays} full days
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs text-muted">
+            Day {current.dayNumber} of {current.planDays}, {current.successDays} of{' '}
+            {current.requiredSuccessDays} full days, {current.graceRemaining} grace left
           </p>
-          <p className="text-sm">{penaltyHint(current.projectedToday)}</p>
-        </>
+          <DayStrip days={current.days} target={current.config.dailyTarget} />
+        </div>
       )}
     </div>
   );
@@ -60,6 +46,7 @@ function Summary({ view }: { view: DashboardView }) {
 export function PopupApp({ openDashboard = openDashboardSidePanel }: PopupAppProps) {
   const state = useDashboard();
   useRefreshOnOpen();
+  useTheme(state.status === 'ready' ? state.view.settings.theme : 'dark');
   const [error, setError] = useState<string | null>(null);
 
   const handleOpen = async () => {
@@ -73,13 +60,13 @@ export function PopupApp({ openDashboard = openDashboardSidePanel }: PopupAppPro
   };
 
   return (
-    <div className="flex w-[340px] flex-col gap-4 p-4">
+    <div className="flex w-[360px] flex-col gap-4 p-4">
       <header className="flex items-center gap-2">
-        <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
+        <img src="/icon/32.png" alt="" className="size-4" />
         <h1 className="text-sm font-semibold tracking-tight">DSA Discipline</h1>
       </header>
 
-      {state.status === 'loading' && <Skeleton className="h-20 w-full" />}
+      {state.status === 'loading' && <Skeleton className="h-24 w-full" />}
       {state.status === 'error' && (
         <p role="alert" className="text-sm text-danger">
           Could not load your data: {state.message}

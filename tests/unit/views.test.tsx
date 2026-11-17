@@ -38,23 +38,28 @@ async function viewWith(solvedToday: number, startOverrides = {}) {
 describe('TodayView', () => {
   it('shows progress, challenge stats and the potential penalty', async () => {
     render(<TodayView view={await viewWith(2)} />);
-    expect(screen.getByLabelText('Solved today')).toHaveTextContent('2 / 4');
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
-    expect(screen.getByText('If the day ended now: ₹10 virtual penalty.')).toBeInTheDocument();
-    expect(screen.getByText('1 of 7')).toBeInTheDocument();
-    expect(screen.getByText('2 / 2')).toBeInTheDocument(); // grace left
+    expect(screen.getByRole('img', { name: '2 of 4 problems solved today' })).toBeInTheDocument();
+    expect(screen.getByText('2 more to go.')).toBeInTheDocument();
+    expect(screen.getByText('₹10 at stake. Each problem now saves ₹5.')).toBeInTheDocument();
+    expect(screen.getByText('Day 1 of 7')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '2 of 2 grace days left' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Challenge days' }).children).toHaveLength(7);
     expect(screen.getAllByText('Manual')).toHaveLength(2);
   });
 
   it('explains grace when nothing is solved yet', async () => {
     render(<TodayView view={await viewWith(0)} />);
-    expect(screen.getByText(/uses a grace day \(no penalty\)/)).toBeInTheDocument();
-    expect(screen.getByText('Nothing logged today yet.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Ending at zero uses 1 of your 2 grace days. Hit all 4 to keep it.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nothing logged yet\./)).toBeInTheDocument();
   });
 
   it('confirms when the target is met', async () => {
     render(<TodayView view={await viewWith(4)} />);
-    expect(screen.getByText('Target met — no virtual penalty today.')).toBeInTheDocument();
+    expect(screen.getByText('Done for today.')).toBeInTheDocument();
+    expect(screen.getByText('No virtual penalty today. See you tomorrow.')).toBeInTheDocument();
+    expect(screen.getByText('Streak safe', { exact: true })).toBeInTheDocument(); // countdown chip
   });
 
   it('adds a manual problem from a pasted LeetCode link', async () => {
@@ -153,6 +158,34 @@ describe('ChallengeView and HistoryView', () => {
   it('summarizes challenges in history', async () => {
     render(<HistoryView view={await viewWith(1)} />);
     expect(screen.getByText('In progress')).toBeInTheDocument();
-    expect(screen.getByText('7-day · 4/day')).toBeInTheDocument();
+    expect(screen.getByText('7-day, 4/day')).toBeInTheDocument();
+  });
+});
+
+describe('SettingsView', () => {
+  it('keeps unsaved edits when unrelated data refreshes, and saves the full settings', async () => {
+    const { SettingsView } = await import('../../src/ui/views/SettingsView');
+    const view = await viewWith(0);
+    const { rerender } = render(<SettingsView view={view} />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    rerender(<SettingsView view={{ ...view, todaySolved: 1, settings: { ...view.settings } }} />);
+    expect(screen.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(screen.getByRole('switch', { name: /Morning summary/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(sendCommand).toHaveBeenCalledWith({
+      type: 'UPDATE_SETTINGS',
+      settings: {
+        theme: 'light',
+        countManualDefault: true,
+        notifications: {
+          enabled: true,
+          reminderTime: '20:00',
+          deadlineMinutesBefore: 60,
+          targetMet: true,
+          dailySummary: true,
+        },
+      },
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent('Settings saved.');
   });
 });

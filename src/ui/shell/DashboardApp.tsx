@@ -4,6 +4,7 @@ import { useHashRoute } from '../routing/useHashRoute';
 import { Skeleton } from '../design-system/Skeleton';
 import { useDashboard } from '../hooks/useDashboard';
 import { useRefreshOnOpen } from '../hooks/useRefreshOnOpen';
+import { useTheme } from '../hooks/useTheme';
 import { VIEWS } from '../views';
 
 const NAV_ROUTES: readonly Route[] = ['today', 'challenge', 'history', 'integrations', 'settings'];
@@ -12,12 +13,13 @@ export function DashboardApp({ initialRoute }: { initialRoute: Route }) {
   const route = useHashRoute(initialRoute);
   const state = useDashboard();
   useRefreshOnOpen();
+  useTheme(state.status === 'ready' ? state.view.settings.theme : 'dark');
   const View = VIEWS[route];
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
+        <img src="/icon/32.png" alt="" className="size-4" />
         <h1 className="text-sm font-semibold tracking-tight">DSA Discipline</h1>
       </header>
 

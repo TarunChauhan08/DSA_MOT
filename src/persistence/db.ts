@@ -6,6 +6,7 @@ import type {
   CompletionRecord,
   MappingRecord,
   MetaRecord,
+  NotificationLogRecord,
   PenaltyRecord,
 } from './records';
 import { SCHEMA_VERSIONS, type SchemaVersion } from './schema';
@@ -21,6 +22,7 @@ export class DsaDatabase extends Dexie {
   declare mappings: EntityTable<MappingRecord, 'id'>;
   declare auditEvents: EntityTable<AuditEvent, 'seq'>;
   declare meta: EntityTable<MetaRecord, 'key'>;
+  declare notificationLog: EntityTable<NotificationLogRecord, 'eventKey'>;
 
   constructor(name: string = DATABASE_NAME, versions: readonly SchemaVersion[] = SCHEMA_VERSIONS) {
     super(name);

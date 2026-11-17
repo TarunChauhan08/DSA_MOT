@@ -3,16 +3,10 @@ import type { EntryStatus, Evidence } from '../../domain/completion/counting';
 import type { ChallengeStatus } from '../../persistence/records';
 import { Badge, type BadgeTone } from '../design-system/Badge';
 import { entryLabel, OUTCOME_LABEL } from '../format';
-
-const OUTCOME_TONE: Record<DayOutcome, BadgeTone> = {
-  SUCCESS: 'accent',
-  PARTIAL_PENALIZED: 'warning',
-  ZERO_GRACE: 'info',
-  ZERO_PENALIZED: 'danger',
-};
+import { ToneLabel } from '../semantics';
 
 export function OutcomeBadge({ outcome }: { outcome: DayOutcome }) {
-  return <Badge tone={OUTCOME_TONE[outcome]}>{OUTCOME_LABEL[outcome]}</Badge>;
+  return <ToneLabel tone={outcome}>{OUTCOME_LABEL[outcome]}</ToneLabel>;
 }
 
 export function EntryBadge({ evidence, status }: { evidence: Evidence; status: EntryStatus }) {

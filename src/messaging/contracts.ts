@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { MAX_DAILY_TARGET } from '../domain/challenge/config';
 import { isValidSlug } from '../domain/identity/identity';
+import { SettingsSchema } from '../application/settings';
 
 /** Whole rupees; converted to paise in the service worker. */
 const MAX_PENALTY_RUPEES = 100_000;
@@ -34,6 +35,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('CONNECT_LEETCODE'), username: z.string().max(60) }).strict(),
   z.object({ type: z.literal('DISCONNECT_LEETCODE') }).strict(),
+  z.object({ type: z.literal('UPDATE_SETTINGS'), settings: SettingsSchema }).strict(),
   /** Popup/dashboard opened: check integrations now (debounced in the worker). */
   z.object({ type: z.literal('REFRESH_INTEGRATIONS') }).strict(),
   z
