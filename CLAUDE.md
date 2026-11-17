@@ -29,11 +29,11 @@ Commands (npm, Node ≥ 22):
 
 - `npm run dev` — WXT dev build with HMR · `npm run build` — production build to `.output/chrome-mv3`
 - `npm run typecheck` · `npm run lint` · `npm run format:check` · `npm test` (Vitest)
-- `npm run test:e2e` — e2e build (`--mode e2e`, enables the test clock) + Playwright with the unpacked extension (needs `npx playwright install chromium`, or `CHROME_PATH` to a Chrome for Testing binary)
+- `npm run test:e2e` — release + e2e builds (`--mode e2e` enables the test clock), then Playwright with the unpacked extension (needs `npx playwright install chromium`, or `CHROME_PATH` to a Chrome for Testing binary)
 - `npm run check` — everything except e2e; must pass before a phase is reported done
 
 ## Process
 
 Phased workflow (docs/PRD.md §19). Stop at phase end and report (PRD §21). No destructive git. Push only when the owner asks; work on a branch and merge via PR after CI passes. Ask on ambiguous requirements.
 
-Requirements: docs/PRD.md · Proposal: docs/PHASE_0_PROPOSAL.md · Decisions: docs/decisions/
+Requirements: docs/PRD.md · Architecture: docs/ARCHITECTURE.md · Design: docs/DESIGN.md · Security: docs/SECURITY.md · Decisions: docs/decisions/
